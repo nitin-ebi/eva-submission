@@ -15,34 +15,37 @@
 # limitations under the License.
 
 import logging
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
+from datetime import date
 
 from ebi_eva_common_pyutils.common_utils import pretty_print
 from ebi_eva_common_pyutils.logger import logging_config as log_cfg
 
 from eva_sub_cli_processing.sub_cli_utils import (
-    get_from_sub_ws, sub_ws_url_build, PROCESSING_STEPS, PROCESSING_STATUS
+    get_from_sub_ws, sub_ws_url_build, PROCESSING_STEPS, PROCESSING_STATUS, SUBMISSION_STATUS
 )
 from eva_submission.submission_config import load_config
 
 logger = log_cfg.get_logger(__name__)
 
-DISPLAY_FIELDS = ['submissionId', 'accountId', 'eloadId', 'uploadedTime', 'processingStep', 'processingStatus',
-                  'projectTitle']
+DISPLAY_FIELDS = ['submissionId', 'submissionAccount', 'eloadId', 'uploadedTime', 'processingStep', 'processingStatus',
+                  'projectTitle', 'releaseDate', 'rt_link']
 SUBMISSION_SOURCES = ['email', 'eva-sub-cli']
 
 # Maps CLI underscore arg names to API camelCase query parameter names
 PARAM_MAP = {
-    'submission_id':      'submissionId',
-    'eload_id':           'eloadId',
-    'uploaded_after':     'uploadedAfter',
+    'submission_id': 'submissionId',
+    'eload_id': 'eloadId',
+    'uploaded_after': 'uploadedAfter',
     'submission_account': 'submissionAccount',
-    'source':             'source',
-    'processing_step':    'processingStep',
-    'processing_status':  'processingStatus',
-    'account_id':         'accountId',
-    'uploaded_time':      'uploadedTime',
-    'project_title':      'projectTitle'
+    'source': 'source',
+    'processing_step': 'processingStep',
+    'processing_status': 'processingStatus',
+    'submission_status': 'submissionStatus',
+    'uploaded_time': 'uploadedTime',
+    'project_title': 'projectTitle',
+    'release_date': 'releaseDate',
+    'rt_link': 'rtLink'
 }
 
 def map_sort(sort_values):
@@ -74,24 +77,33 @@ def fetch_submissions(**filters):
     return all_submissions
 
 
+def iso_date(value):
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise ArgumentTypeError(f"invalid date: '{value}' (expected format: YYYY-MM-DD)")
+
 def main():
     argparse = ArgumentParser(description='List submissions from the submission webservice')
     argparse.add_argument('--submission_id', required=False, type=str,
                           help='Filter by submission ID')
     argparse.add_argument('--eload_id', required=False, type=int,
                           help='Filter by eload ID')
-    argparse.add_argument('--uploaded_after', required=False, type=str, metavar='DATE',
+    argparse.add_argument('--uploaded_after', required=False, type=iso_date, metavar='DATE',
                           help='Filter submissions uploaded on or after this date (ISO-8601, e.g. 2024-01-15)')
     argparse.add_argument('--submission_account', required=False, type=str,
                           help='Filter by submission account')
     argparse.add_argument('--source', required=False, type=str, choices=SUBMISSION_SOURCES,
                           help='Filter by submission source')
-    argparse.add_argument('--processing_step', required=False, choices=PROCESSING_STEPS,
-                          help='Filter by processing step')
-    argparse.add_argument('--processing_status', required=False, choices=PROCESSING_STATUS,
-                          help='Filter by processing status')
-    argparse.add_argument('--sort', required=False, nargs='*',  action='extend', metavar='FIELD[,asc|desc]',
-                          help='Sort by field with optional direction (e.g. uploadedTime,desc); repeatable', default=['uploadedTime,desc'])
+    argparse.add_argument('--processing_step', required=False, nargs='*', action='extend', choices=PROCESSING_STEPS,
+                          help='Filter by processing step(s); repeatable or space-separated')
+    argparse.add_argument('--processing_status', required=False, nargs='*', action='extend', choices=PROCESSING_STATUS,
+                          help='Filter by processing status(es); repeatable or space-separated')
+    argparse.add_argument('--submission_status', required=False, nargs='*', action='extend', choices=SUBMISSION_STATUS,
+                          help='Filter by submission status(es); repeatable or space-separated')
+    argparse.add_argument('--sort', required=False, nargs='*', action='extend', metavar='FIELD[,asc|desc]',
+                          help='Sort by field with optional direction (e.g. uploadedTime,desc); repeatable',
+                          default=['uploadedTime,desc'])
     argparse.add_argument('--debug', action='store_true', default=False,
                           help='Set the script to output logging information at debug level')
     args = argparse.parse_args()
