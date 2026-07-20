@@ -32,6 +32,8 @@ DISPLAY_FIELDS = ['submissionId', 'submissionAccount', 'eloadId', 'uploadedTime'
                   'projectTitle', 'releaseDate', 'rt_link']
 SUBMISSION_SOURCES = ['email', 'eva-sub-cli']
 
+MAX_PROJECT_TITLE_WIDTH = 40
+
 # Maps CLI underscore arg names to API camelCase query parameter names
 PARAM_MAP = {
     'submission_id': 'submissionId',
@@ -83,6 +85,14 @@ def iso_date(value):
     except ValueError:
         raise ArgumentTypeError(f"invalid date: '{value}' (expected format: YYYY-MM-DD)")
 
+
+def truncate(value, max_width):
+    value = str(value)
+    if len(value) <= max_width:
+        return value
+    return value[:max_width - 3] + '...'
+
+
 def main():
     argparse = ArgumentParser(description='List submissions from the submission webservice')
     argparse.add_argument('--submission_id', required=False, type=str,
@@ -118,7 +128,12 @@ def main():
     sort = map_sort(args.sort) if args.sort else None
     submissions = fetch_submissions(sort=sort, **filter_params)
 
-    rows = [tuple(str(s.get(field) or '') for field in DISPLAY_FIELDS) for s in submissions]
+    rows = [
+        tuple(
+            truncate(s.get(field) or '', MAX_PROJECT_TITLE_WIDTH) if field == 'projectTitle' else str(s.get(field) or '')
+            for field in DISPLAY_FIELDS
+        ) for s in submissions
+    ]
     pretty_print(DISPLAY_FIELDS, rows)
     print(f'Total: {len(submissions)} submission(s)')
 
