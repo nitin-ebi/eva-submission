@@ -121,7 +121,7 @@ class ProjectEvaSubmission(Base):
 
     project_accession = Column(String(25), primary_key=True, nullable=False)
     old_ticket_id = Column(Integer, primary_key=True, nullable=False)
-    eload_id = Column(Integer)
+    submission_id = Column(Integer)
     old_eva_submission_id = Column(Integer)
 
 class Sampleset(Base):

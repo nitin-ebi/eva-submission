@@ -19,7 +19,7 @@ from argparse import ArgumentParser
 
 from ebi_eva_common_pyutils.logger import logging_config as log_cfg
 
-from eva_submission.eload_migration import EloadMigration
+from eva_submission.eload_migration import SubmissionMigration
 from eva_submission.submission_config import load_config
 
 logger = log_cfg.get_logger(__name__)
@@ -41,7 +41,7 @@ def main():
     # Load the config_file from default location
     load_config()
 
-    with EloadMigration(args.eload) as eload:
+    with SubmissionMigration(args.eload) as eload:
         eload.migrate(args.project)
 
 
