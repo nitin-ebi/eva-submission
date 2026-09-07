@@ -40,6 +40,8 @@ def main():
     argparse.add_argument('--reference', required=False, type=str,
                           help='Override and replace the reference sequence accession provided in the metadata '
                                'spreadsheet.')
+    argparse.add_argument('--force_cli', action='store_true', default=False,
+                          help='Force preparation for CLI submission regardless of status')
     argparse.add_argument('--debug', action='store_true', default=False,
                           help='Set the script to output logging information at debug level')
     args = argparse.parse_args()
@@ -53,7 +55,8 @@ def main():
 
     if args.submission_id:
         with SubCLIToEloadConverter(args.eload, args.submission_id) as sub_cli_eload:
-            sub_cli_eload.check_status()
+            if not args.force_cli:
+                sub_cli_eload.check_status()
             sub_cli_eload.retrieve_vcf_files_from_sub_cli_ftp_dir()
             sub_cli_eload.download_metadata_json_and_store()
             sub_cli_eload.detect_all(args.taxid, args.reference)

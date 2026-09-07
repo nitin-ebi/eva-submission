@@ -43,7 +43,8 @@ class SubCLIToEloadConverter(EloadPreparation):
 
     def check_status(self):
         status = self._submission_obj.get('submission', {}).get('status')
-        assert status == 'UPLOADED', f'Status for submission {self.submission_id} must be UPLOADED'
+        assert status == 'UPLOADED', \
+            f'Status for submission {self.submission_id} must be UPLOADED. To prepare anyway, use --force_cli'
 
     def retrieve_vcf_files_from_sub_cli_ftp_dir(self):
         vcf_dir = self._get_dir('vcf')
